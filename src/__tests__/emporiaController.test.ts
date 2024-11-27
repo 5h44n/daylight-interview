@@ -16,6 +16,8 @@ describe('EmporiaController Tests', () => {
       throw new Error('EMPORIA_USERNAME and EMPORIA_PASSWORD environment variables are required');
     }
 
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
     emporiaService = new EmporiaService();
 
     await initializeDatabase();

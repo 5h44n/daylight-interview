@@ -6,23 +6,14 @@ import {
 } from 'amazon-cognito-identity-js';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/models';
+import {
+  EmporiaTokens,
+  EmporiaCustomer,
+  EmporiaCustomerDevices,
+} from '../interfaces/emporiaInterfaces';
 
 const CLIENT_ID = '4qte47jbstod8apnfic0bunmrq';
 const USER_POOL = 'us-east-2_ghlOXVLi1';
-
-export interface EmporiaTokens {
-  idToken: string;
-  refreshToken: string;
-  idTokenExpiresAt?: Date;
-}
-
-export interface EmporiaCustomer {
-  customerGid: number;
-  email: string;
-  firstName: string;
-  lastName: string;
-  createdAt: string;
-}
 
 export class EmporiaService {
   private BASE_URL = 'https://api.emporiaenergy.com';
@@ -50,6 +41,28 @@ export class EmporiaService {
     const customer = await response.json();
 
     return customer as EmporiaCustomer;
+  }
+
+  async getCustomerDevices(user: User): Promise<EmporiaCustomerDevices> {
+    if (!user.emporiaIdToken) {
+      throw new Error('User does not have valid Emporia credentials');
+    }
+
+    await this.refreshTokensIfNeeded(user);
+
+    const response = await fetch(`${this.BASE_URL}/customers/devices`, {
+      headers: {
+        authtoken: user.emporiaIdToken,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch customer devices: ${response.statusText}`);
+    }
+
+    const devicesData = await response.json();
+
+    return devicesData as EmporiaCustomerDevices;
   }
 
   async authenticate(username: string, password: string, user: User): Promise<EmporiaTokens> {

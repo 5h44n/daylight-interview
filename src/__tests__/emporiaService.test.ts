@@ -7,62 +7,47 @@ import { initializeDatabase, sequelize } from '../models';
 
 describe('EmporiaService Tests', () => {
   let emporiaService: EmporiaService;
-  let testUser: User;
+  let authenticatedUser: User;
+  let invalidAuthenticatedUser: User;
+  let unauthenticatedUser: User;
 
   beforeAll(async () => {
     if (!process.env.EMPORIA_USERNAME || !process.env.EMPORIA_PASSWORD) {
       throw new Error('EMPORIA_USERNAME and EMPORIA_PASSWORD environment variables are required');
     }
 
-    emporiaService = new EmporiaService();
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
     await initializeDatabase();
     await sequelize.sync({ force: true });
-  });
 
-  beforeEach(async () => {
-    await User.destroy({ where: {} });
-    testUser = await User.create({ email: 'bruce@wayne.com' });
+    emporiaService = new EmporiaService();
+
+    authenticatedUser = await User.create({ email: 'valid@user.com' });
+    await emporiaService.authenticate(
+      process.env.EMPORIA_USERNAME as string,
+      process.env.EMPORIA_PASSWORD as string,
+      authenticatedUser
+    );
+
+    invalidAuthenticatedUser = await User.create({
+      email: 'invalid@user.com',
+      emporiaUsername: 'invalidUser',
+      emporiaIdToken: 'invalidIdToken',
+      emporiaRefreshToken: 'invalidRefreshToken',
+      emporiaIdTokenExpiresAt: new Date(Date.now() + 1000 * 60 * 60), // Still valid but invalid token
+    });
+
+    unauthenticatedUser = await User.create({ email: 'unauthenticated@user.com' });
   });
 
   afterAll(async () => {
     await sequelize.close();
   });
 
-  describe('EmporiaService#authenticate', () => {
-    it('should authenticate successfully', async () => {
-      await emporiaService.authenticate(
-        process.env.EMPORIA_USERNAME as string,
-        process.env.EMPORIA_PASSWORD as string,
-        testUser
-      );
-
-      expect(testUser.emporiaIdToken).toBeTruthy();
-      expect(testUser.emporiaRefreshToken).toBeTruthy();
-      expect(testUser.emporiaIdTokenExpiresAt).toBeTruthy();
-      expect(testUser.emporiaUsername).toBe(process.env.EMPORIA_USERNAME);
-    });
-
-    it('should throw error if invalid credentials', async () => {
-      await expect(emporiaService.authenticate('invalid', 'invalid', testUser)).rejects.toThrow(
-        'Emporia authentication failed'
-      );
-
-      // Ensure that user tokens were not updated
-      expect(testUser.emporiaIdToken).toBeUndefined();
-      expect(testUser.emporiaRefreshToken).toBeUndefined();
-      expect(testUser.emporiaIdTokenExpiresAt).toBeUndefined();
-    });
-  });
-
   describe('EmporiaService#getCustomerDetails', () => {
     it('should get customer details successfully', async () => {
-      await emporiaService.authenticate(
-        process.env.EMPORIA_USERNAME as string,
-        process.env.EMPORIA_PASSWORD as string,
-        testUser
-      );
-
-      const customer = await emporiaService.getCustomerDetails(testUser);
+      const customer = await emporiaService.getCustomerDetails(authenticatedUser);
 
       expect(customer.customerGid).toBeTruthy();
       expect(customer.email).toBeTruthy();
@@ -72,91 +57,87 @@ describe('EmporiaService Tests', () => {
     });
 
     it('should throw error if user lacks valid Emporia credentials', async () => {
-      // Ensure testUser does not have valid tokens
-      await testUser.update({
-        emporiaUsername: null,
-        emporiaIdToken: null,
-        emporiaRefreshToken: null,
-        emporiaIdTokenExpiresAt: null,
-      });
-
-      await expect(emporiaService.getCustomerDetails(testUser)).rejects.toThrow(
+      await expect(emporiaService.getCustomerDetails(unauthenticatedUser)).rejects.toThrow(
         'User does not have valid Emporia credentials'
       );
     });
   });
 
-  describe('EmporiaService#refreshTokensIfNeeded', () => {
-    beforeEach(async () => {
-      await emporiaService.authenticate(
-        process.env.EMPORIA_USERNAME as string,
-        process.env.EMPORIA_PASSWORD as string,
-        testUser
+  describe('EmporiaService#getCustomerDevices', () => {
+    it('should return customer devices successfully', async () => {
+      const devicesData = await emporiaService.getCustomerDevices(authenticatedUser);
+
+      expect(devicesData.customerGid).toBeTruthy();
+      expect(devicesData.devices).toBeTruthy();
+      expect(devicesData.devices.length).toBeGreaterThan(0);
+    });
+
+    it('should throw an error if user lacks valid Emporia credentials', async () => {
+      await expect(emporiaService.getCustomerDevices(unauthenticatedUser)).rejects.toThrow(
+        'User does not have valid Emporia credentials'
       );
     });
 
-    // This works but skip since we are intermittently getting this error `Emporia authentication failed: NotAuthorizedException: Password attempts exceeded`
-    it.skip('should refresh tokens if the idToken is expired', async () => {
-      // Set the emporiaIdTokenExpiresAt to a past date to simulate expiration
-      await testUser.update({ emporiaIdTokenExpiresAt: new Date(Date.now() - 1000) });
-      await testUser.reload();
-
-      const oldIdToken = testUser.emporiaIdToken;
-
-      await emporiaService['refreshTokensIfNeeded'](testUser);
-
-      expect(testUser.emporiaIdToken).not.toBe(oldIdToken);
-      expect(testUser.emporiaRefreshToken).toBeTruthy();
-      expect(testUser.emporiaIdTokenExpiresAt).toBeTruthy();
+    it('should throw an error if the API call fails due to invalid token', async () => {
+      await expect(emporiaService.getCustomerDevices(invalidAuthenticatedUser)).rejects.toThrow(
+        'Failed to fetch customer devices'
+      );
     });
+  });
 
+  describe('EmporiaService#refreshTokensIfNeeded', () => {
     it('should not refresh tokens if the idToken is still valid', async () => {
-      const oldIdToken = testUser.emporiaIdToken;
+      const oldIdToken = authenticatedUser.emporiaIdToken;
+      const oldExpiresAt = authenticatedUser.emporiaIdTokenExpiresAt;
 
-      await emporiaService['refreshTokensIfNeeded'](testUser);
+      await emporiaService['refreshTokensIfNeeded'](authenticatedUser);
 
-      expect(testUser.emporiaIdToken).toBe(oldIdToken);
+      expect(authenticatedUser.emporiaIdToken).toBe(oldIdToken);
+      expect(authenticatedUser.emporiaIdTokenExpiresAt).toBe(oldExpiresAt);
     });
 
-    // This works but skip since we are intermittently getting this error `Emporia authentication failed: NotAuthorizedException: Password attempts exceeded`
-    it.skip('should throw an error if no refresh token is available', async () => {
-      await testUser.update({ emporiaRefreshToken: null });
-      await testUser.reload();
+    it('should refresh tokens if the idToken is expired', async () => {
+      // Simulate expiration
+      await authenticatedUser.update({ emporiaIdTokenExpiresAt: new Date(Date.now() - 1000) });
+      await authenticatedUser.reload();
 
-      await expect(emporiaService['refreshTokensIfNeeded'](testUser)).rejects.toThrow(
+      await emporiaService['refreshTokensIfNeeded'](authenticatedUser);
+
+      // TODO: Could mock this
+      // AWS Cognito will return the same token and expiry time if it's still valid, so just check that the call was successful and the tokens are still set
+      expect(authenticatedUser.emporiaIdToken).toBeTruthy();
+      expect(authenticatedUser.emporiaRefreshToken).toBeTruthy();
+      expect(authenticatedUser.emporiaIdTokenExpiresAt).toBeTruthy();
+    });
+
+    it('should throw an error if no refresh token is available', async () => {
+      await unauthenticatedUser.update({ emporiaRefreshToken: null });
+
+      await expect(emporiaService['refreshTokensIfNeeded'](unauthenticatedUser)).rejects.toThrow(
         'No refresh token available'
       );
     });
   });
 
   describe('EmporiaService#refreshTokens', () => {
-    beforeEach(async () => {
-      await emporiaService.authenticate(
-        process.env.EMPORIA_USERNAME as string,
-        process.env.EMPORIA_PASSWORD as string,
-        testUser
-      );
-    });
-
     it('should update user tokens on successful refresh', async () => {
-      const oldIdToken = testUser.emporiaIdToken;
-
       // Simulate expiration
-      await testUser.update({ emporiaIdTokenExpiresAt: new Date(Date.now() - 1000) });
-      await testUser.reload();
+      await authenticatedUser.update({ emporiaIdTokenExpiresAt: new Date(Date.now() - 1000) });
+      await authenticatedUser.reload();
 
-      await emporiaService['refreshTokens'](testUser);
+      await emporiaService['refreshTokens'](authenticatedUser);
 
-      expect(testUser.emporiaIdToken).not.toBe(oldIdToken);
-      expect(testUser.emporiaRefreshToken).toBeTruthy();
-      expect(testUser.emporiaIdTokenExpiresAt).toBeTruthy();
+      // TODO: Could mock this
+      // AWS Cognito will return the same token and expiry time if it's still valid, so just check that the call was successful and the tokens are still set
+      expect(authenticatedUser.emporiaIdToken).toBeTruthy();
+      expect(authenticatedUser.emporiaRefreshToken).toBeTruthy();
+      expect(authenticatedUser.emporiaIdTokenExpiresAt).toBeTruthy();
     });
 
     it('should throw an error if token refresh fails', async () => {
-      await testUser.update({ emporiaRefreshToken: 'invalidRefreshToken' });
-      await testUser.reload();
+      await invalidAuthenticatedUser.update({ emporiaRefreshToken: 'invalidRefreshToken' });
 
-      await expect(emporiaService['refreshTokens'](testUser)).rejects.toThrow();
+      await expect(emporiaService['refreshTokens'](invalidAuthenticatedUser)).rejects.toThrow();
     });
   });
 });

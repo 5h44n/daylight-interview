@@ -8,8 +8,6 @@ export function setupWebSocket(wss: WebSocketServer) {
       try {
         const data = JSON.parse(message.toString());
 
-        console.log('Received:', data);
-
         ws.send(JSON.stringify({ type: 'echo', data }));
       } catch (error) {
         console.error('WebSocket message error:', error);
