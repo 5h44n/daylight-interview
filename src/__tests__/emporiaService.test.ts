@@ -23,7 +23,7 @@ describe('EmporiaService Tests', () => {
 
     emporiaService = new EmporiaService();
 
-    authenticatedUser = await User.create({ email: 'valid@user.com' });
+    authenticatedUser = await User.create({ email: 'valid@user.com', password: 'password' });
     await emporiaService.authenticate(
       process.env.EMPORIA_USERNAME as string,
       process.env.EMPORIA_PASSWORD as string,
@@ -32,13 +32,17 @@ describe('EmporiaService Tests', () => {
 
     invalidAuthenticatedUser = await User.create({
       email: 'invalid@user.com',
+      password: 'password',
       emporiaUsername: 'invalidUser',
       emporiaIdToken: 'invalidIdToken',
       emporiaRefreshToken: 'invalidRefreshToken',
       emporiaIdTokenExpiresAt: new Date(Date.now() + 1000 * 60 * 60), // Still valid but invalid token
     });
 
-    unauthenticatedUser = await User.create({ email: 'unauthenticated@user.com' });
+    unauthenticatedUser = await User.create({
+      email: 'unauthenticated@user.com',
+      password: 'password',
+    });
   });
 
   afterAll(async () => {
