@@ -36,7 +36,7 @@ describe('WebSocket Server', () => {
       const response = JSON.parse(message.toString());
       expect(response).toEqual({
         type: 'echo',
-        data: testMessage
+        data: testMessage,
       });
       done();
     });
@@ -46,7 +46,7 @@ describe('WebSocket Server', () => {
 
   it('should handle invalid JSON messages', (done) => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    
+
     wsClient.send('invalid json');
 
     // Give some time for the error to be logged

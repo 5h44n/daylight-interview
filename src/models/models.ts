@@ -6,22 +6,24 @@ class User extends Model {
 }
 
 export function initializeModels(sequelize: Sequelize) {
-  User.init({
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
+  User.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+      },
+      email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+      },
     },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true
+    {
+      sequelize,
+      modelName: 'User',
     }
-  }, {
-    sequelize,
-    modelName: 'User'
-  });
-
+  );
 }
 
 export { User };

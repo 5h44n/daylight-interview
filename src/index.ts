@@ -23,11 +23,13 @@ setupRoutes(app);
 setupWebSocket(wss);
 
 // Initialize database
-initializeDatabase().then(() => {
-  server.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+initializeDatabase()
+  .then(() => {
+    server.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
   });
-}).catch(error => {
-  console.error('Failed to initialize database:', error);
-  process.exit(1);
-});

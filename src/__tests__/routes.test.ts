@@ -23,15 +23,12 @@ describe('REST API Routes', () => {
     it('should return all users', async () => {
       const mockUsers = [
         { id: 1, name: 'John' },
-        { id: 2, name: 'Jane' }
+        { id: 2, name: 'Jane' },
       ];
-      
+
       (User.findAll as jest.Mock).mockResolvedValue(mockUsers);
 
-      const response = await request(app)
-        .get('/users')
-        .expect('Content-Type', /json/)
-        .expect(200);
+      const response = await request(app).get('/users').expect('Content-Type', /json/).expect(200);
 
       expect(response.body).toEqual(mockUsers);
       expect(User.findAll).toHaveBeenCalled();
@@ -40,10 +37,7 @@ describe('REST API Routes', () => {
     it('should handle errors', async () => {
       (User.findAll as jest.Mock).mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .get('/users')
-        .expect('Content-Type', /json/)
-        .expect(500);
+      const response = await request(app).get('/users').expect('Content-Type', /json/).expect(500);
 
       expect(response.body).toEqual({ error: 'Internal server error' });
     });

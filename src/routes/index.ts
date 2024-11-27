@@ -1,4 +1,4 @@
-import express, { Express, Application } from 'express';
+import { Application } from 'express';
 import { User } from '../models/models';
 
 export function setupRoutes(app: Application) {

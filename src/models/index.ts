@@ -4,7 +4,7 @@ import { initializeModels } from './models';
 const sequelize = new Sequelize({
   dialect: 'sqlite',
   storage: 'database.sqlite',
-  logging: false
+  logging: false,
 });
 
 export async function initializeDatabase() {
