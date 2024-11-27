@@ -41,7 +41,6 @@ describe('EmporiaController Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ message: 'Emporia authentication successful' });
 
-      // Fetch the user from the database
       const updatedUser = await User.findByPk(testUser.id);
 
       expect(updatedUser?.emporiaUsername).toBe(process.env.EMPORIA_USERNAME);
@@ -85,7 +84,6 @@ describe('EmporiaController Tests', () => {
       expect(response.status).toBe(400);
       expect(response.body).toEqual({ error: 'Emporia authentication failed' });
 
-      // Fetch the user from the database
       const updatedUser = await User.findByPk(testUser.id);
 
       expect(updatedUser?.emporiaIdToken).toBeNull();
@@ -96,7 +94,7 @@ describe('EmporiaController Tests', () => {
 
   describe('getCustomerDetails', () => {
     it('should get customer details successfully', async () => {
-      // First, authenticate the user
+      // Authenticate the user
       await request(app).post(`/users/${testUser.id}/emporia-auth`).send({
         emporiaUsername: process.env.EMPORIA_USERNAME,
         emporiaPassword: process.env.EMPORIA_PASSWORD,
