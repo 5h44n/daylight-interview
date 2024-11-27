@@ -89,6 +89,57 @@ describe('EmporiaService Tests', () => {
     });
   });
 
+  describe('EmporiaService#getChartUsage', () => {
+    let deviceGid: number;
+
+    beforeEach(async () => {
+      // get deviceGid
+      const devicesData = await emporiaService.getCustomerDevices(authenticatedUser);
+      deviceGid = devicesData.devices[0].deviceGid;
+    });
+
+    it('should retrieve chart usage successfully', async () => {
+      const channels = [1];
+      const start = new Date(Date.UTC(2023, 1, 1, 0, 0, 0)).toISOString();
+      const end = new Date(Date.UTC(2023, 1, 31, 23, 0, 0, 0)).toISOString();
+      const scale = '1H';
+      const energyUnit = 'KilowattHours';
+
+      const result = await emporiaService.getChartUsage(
+        authenticatedUser,
+        deviceGid,
+        channels,
+        start,
+        end,
+        scale,
+        energyUnit
+      );
+
+      expect(result.usageList).toBeDefined();
+      expect(result.firstUsageInstant).toBeDefined();
+    });
+
+    it('should throw an error if user lacks valid Emporia credentials', async () => {
+      const channels = [1];
+      const start = new Date(Date.UTC(2021, 1, 1, 0, 0, 0)).toISOString();
+      const end = new Date(Date.UTC(2021, 1, 31, 0, 0, 0)).toISOString();
+      const scale = '1H';
+      const energyUnit = 'KilowattHours';
+
+      await expect(
+        emporiaService.getChartUsage(
+          unauthenticatedUser,
+          deviceGid,
+          channels,
+          start,
+          end,
+          scale,
+          energyUnit
+        )
+      ).rejects.toThrow('User does not have valid Emporia credentials');
+    });
+  });
+
   describe('EmporiaService#refreshTokensIfNeeded', () => {
     it('should not refresh tokens if the idToken is still valid', async () => {
       const oldIdToken = authenticatedUser.emporiaIdToken;

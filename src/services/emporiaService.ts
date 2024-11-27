@@ -65,6 +65,45 @@ export class EmporiaService {
     return devicesData as EmporiaCustomerDevices;
   }
 
+  async getChartUsage(
+    user: User,
+    deviceGid: number,
+    channels: number[],
+    start: string,
+    end: string,
+    scale: string,
+    energyUnit: string
+  ): Promise<{ usageList: number[]; firstUsageInstant: string }> {
+    if (!user.emporiaIdToken) {
+      throw new Error('User does not have valid Emporia credentials');
+    }
+
+    await this.refreshTokensIfNeeded(user);
+
+    const channelsParam = channels.join(',');
+
+    const url = `${this.BASE_URL}/AppAPI?apiMethod=getChartUsage&deviceGid=${deviceGid}&channel=${channelsParam}&start=${encodeURIComponent(
+      start
+    )}&end=${encodeURIComponent(end)}&scale=${scale}&energyUnit=${encodeURIComponent(energyUnit)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        authtoken: user.emporiaIdToken,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch chart usage: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      usageList: data.usageList,
+      firstUsageInstant: data.firstUsageInstant,
+    };
+  }
+
   async authenticate(username: string, password: string, user: User): Promise<EmporiaTokens> {
     const userPool = new CognitoUserPool({
       UserPoolId: USER_POOL,
