@@ -1,13 +1,14 @@
 import express from 'express';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
-import { initializeDatabase } from './models';
+import { initializeDatabase } from './database';
 import { setupRoutes } from './routes';
 import { setupWebSocket } from './websocket';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
+// JSON Middleware
 app.use(express.json());
 
 // Create HTTP server

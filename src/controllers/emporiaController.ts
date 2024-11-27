@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { User } from '../models/models';
+import { User } from '../models/user';
 import { EmporiaService } from '../services/emporiaService';
 
 export class EmporiaController {

@@ -2,8 +2,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { EmporiaService } from '../services/emporiaService';
-import { User } from '../models/models';
-import { initializeDatabase, sequelize } from '../models';
+import { User } from '../models/user';
+import { initializeDatabase, sequelize } from '../database';
 
 describe('EmporiaService Tests', () => {
   let emporiaService: EmporiaService;

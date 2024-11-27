@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../index';
 import { EmporiaService } from '../services/emporiaService';
-import { User } from '../models/models';
+import { User } from '../models/user';
 import { initializeDatabase, sequelize } from '../models';
 import dotenv from 'dotenv';
 

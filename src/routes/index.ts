@@ -1,25 +1,31 @@
 import { Application } from 'express';
-import { UserController } from '../controllers/userController';
+import { AuthController } from '../controllers/authController';
 import { EmporiaController } from '../controllers/emporiaController';
 import { DevicesController } from '../controllers/devicesController';
+import { authenticate } from '../middleware/authenticate';
 
 export function setupRoutes(app: Application) {
-  const userController = new UserController();
+  const authController = new AuthController();
   const emporiaController = new EmporiaController();
   const devicesController = new DevicesController();
 
-  // User routes
-  app.post('/users', userController.createUser.bind(userController));
-  app.get('/users', userController.getUsers.bind(userController));
-  app.get('/users/:id', userController.getUser.bind(userController));
+  // Auth routes (Public)
+  app.post('/signup', authController.signup.bind(authController));
+  app.post('/login', authController.login.bind(authController));
 
-  // Emporia routes
+  // Middleware to protect the following routes
+  app.use(authenticate);
+
+  // Auth routes (Protected)
+  app.get('/me', authController.getMe.bind(authController));
+
+  // Emporia routes (Protected)
   app.post('/users/:id/emporia-auth', emporiaController.authenticateUser.bind(emporiaController));
   app.get(
     '/users/:id/emporia-customer',
     emporiaController.getCustomerDetails.bind(emporiaController)
   );
 
-  // Device routes
+  // Device routes (Protected)
   app.get('/users/:id/devices', devicesController.getUserDevices.bind(devicesController));
 }

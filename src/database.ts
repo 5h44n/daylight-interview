@@ -1,5 +1,5 @@
 import { Sequelize } from 'sequelize';
-import { initializeModels } from './models';
+import { initializeUser } from './models/user';
 
 const isTestEnv = process.env.NODE_ENV === 'test';
 
@@ -11,6 +11,10 @@ export const sequelize = new Sequelize({
     timestamps: true,
   },
 });
+
+export function initializeModels(sequelize: Sequelize) {
+  initializeUser(sequelize);
+}
 
 export async function initializeDatabase() {
   try {

@@ -5,7 +5,7 @@ import {
   CognitoRefreshToken,
 } from 'amazon-cognito-identity-js';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/models';
+import { User } from '../models/user';
 import {
   EmporiaTokens,
   EmporiaCustomer,
