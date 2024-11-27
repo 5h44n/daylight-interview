@@ -1,7 +1,7 @@
-import { Express } from 'express';
+import express, { Express, Application } from 'express';
 import { User } from '../models/models';
 
-export function setupRoutes(app: Express) {
+export function setupRoutes(app: Application) {
   app.get('/users', async (req, res) => {
     try {
       const users = await User.findAll();

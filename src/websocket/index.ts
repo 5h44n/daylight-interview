@@ -17,7 +17,7 @@ export function setupWebSocket(wss: WebSocketServer) {
     });
 
     ws.on('close', () => {
-      console.log('Client disconnected');
+      // do nothing
     });
   });
 }
