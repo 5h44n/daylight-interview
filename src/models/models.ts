@@ -3,6 +3,8 @@ import { Sequelize, DataTypes, Model } from 'sequelize';
 class User extends Model {
   public id!: number;
   public email!: string;
+  public emporiaAccessToken?: string;
+  public emporiaRefreshToken?: string;
 }
 
 export function initializeModels(sequelize: Sequelize) {
@@ -17,6 +19,14 @@ export function initializeModels(sequelize: Sequelize) {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
+      },
+      emporiaAccessToken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      emporiaRefreshToken: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
     },
     {

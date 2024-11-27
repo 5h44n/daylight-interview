@@ -2,11 +2,19 @@ import request from 'supertest';
 import express from 'express';
 import { setupRoutes } from '../routes';
 import { User } from '../models/models';
+import { EmporiaService } from '../services/emporiaService';
 
 jest.mock('../models/models', () => ({
   User: {
     findAll: jest.fn(),
     create: jest.fn(),
+    findByPk: jest.fn(),
+  },
+}));
+
+jest.mock('../services/emporiaService', () => ({
+  EmporiaService: {
+    authenticate: jest.fn(),
   },
 }));
 
@@ -69,6 +77,77 @@ describe('REST API Routes', () => {
         .expect(400);
 
       expect(response.body).toEqual({ error: 'Invalid request' });
+    });
+  });
+
+  describe('POST /users/:id/emporia-auth', () => {
+    it('should authenticate with Emporia and save tokens', async () => {
+      const userId = '123';
+      const mockUser = {
+        id: userId,
+        update: jest.fn(),
+      };
+      const mockTokens = {
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+      };
+
+      (User.findByPk as jest.Mock).mockResolvedValue(mockUser);
+      (EmporiaService.authenticate as jest.Mock).mockResolvedValue(mockTokens);
+
+      const response = await request(app)
+        .post(`/users/${userId}/emporia-auth`)
+        .send({
+          emporiaUsername: 'test@example.com',
+          emporiaPassword: 'password123',
+        })
+        .expect(200);
+
+      expect(response.body).toEqual({ message: 'Emporia authentication successful' });
+      expect(mockUser.update).toHaveBeenCalledWith({
+        emporiaAccessToken: mockTokens.accessToken,
+        emporiaRefreshToken: mockTokens.refreshToken,
+      });
+    });
+
+    it('should handle missing credentials', async () => {
+      const response = await request(app).post('/users/123/emporia-auth').send({}).expect(400);
+
+      expect(response.body).toEqual({ error: 'Missing required credentials' });
+    });
+
+    it('should handle user not found', async () => {
+      (User.findByPk as jest.Mock).mockResolvedValue(null);
+
+      const response = await request(app)
+        .post('/users/123/emporia-auth')
+        .send({
+          emporiaUsername: 'test@example.com',
+          emporiaPassword: 'password123',
+        })
+        .expect(404);
+
+      expect(response.body).toEqual({ error: 'User not found' });
+    });
+
+    it('should handle authentication failure', async () => {
+      const mockUser = {
+        id: '123',
+        update: jest.fn(),
+      };
+
+      (User.findByPk as jest.Mock).mockResolvedValue(mockUser);
+      (EmporiaService.authenticate as jest.Mock).mockRejectedValue(new Error('Auth failed'));
+
+      const response = await request(app)
+        .post('/users/123/emporia-auth')
+        .send({
+          emporiaUsername: 'test@example.com',
+          emporiaPassword: 'password123',
+        })
+        .expect(400);
+
+      expect(response.body).toEqual({ error: 'Emporia authentication failed' });
     });
   });
 });

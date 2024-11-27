@@ -5,9 +5,9 @@ import { createServer } from 'http';
 
 describe('WebSocket Server', () => {
   let wss: WebSocketServer;
-  let server: any;
+  let server: ReturnType<typeof createServer>;
   let wsClient: WebSocket;
-  const PORT = 0; // Let OS assign random port
+  const PORT = 0;
 
   beforeEach((done) => {
     server = createServer();
