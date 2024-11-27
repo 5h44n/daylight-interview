@@ -11,7 +11,7 @@ export class DevicesController {
 
   async getUserDevices(req: Request, res: Response) {
     try {
-      const { id } = req.params;
+      const id = req.userId;
       const user = await User.findByPk(id);
 
       if (!user) {

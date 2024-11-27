@@ -20,12 +20,8 @@ export function setupRoutes(app: Application) {
   app.get('/me', authController.getMe.bind(authController));
 
   // Emporia routes (Protected)
-  app.post('/users/:id/emporia-auth', emporiaController.authenticateUser.bind(emporiaController));
-  app.get(
-    '/users/:id/emporia-customer',
-    emporiaController.getCustomerDetails.bind(emporiaController)
-  );
+  app.post('/emporia-auth', emporiaController.authenticateUser.bind(emporiaController));
 
   // Device routes (Protected)
-  app.get('/users/:id/devices', devicesController.getUserDevices.bind(devicesController));
+  app.get('/devices', devicesController.getUserDevices.bind(devicesController));
 }

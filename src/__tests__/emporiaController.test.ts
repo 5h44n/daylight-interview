@@ -39,7 +39,7 @@ describe('EmporiaController Tests', () => {
   describe('authenticateUser', () => {
     it('should authenticate a user successfully', async () => {
       const response = await request(app)
-        .post(`/users/${testUser.id}/emporia-auth`)
+        .post(`/emporia-auth`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           emporiaUsername: process.env.EMPORIA_USERNAME,
@@ -57,22 +57,9 @@ describe('EmporiaController Tests', () => {
       expect(updatedUser?.emporiaIdTokenExpiresAt).toBeTruthy();
     });
 
-    it('should return 404 if user is not found', async () => {
-      const response = await request(app)
-        .post('/users/nonexistent-id/emporia-auth')
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          emporiaUsername: process.env.EMPORIA_USERNAME,
-          emporiaPassword: process.env.EMPORIA_PASSWORD,
-        });
-
-      expect(response.status).toBe(404);
-      expect(response.body).toEqual({ error: 'User not found' });
-    });
-
     it('should return 400 if request body is invalid', async () => {
       const response = await request(app)
-        .post(`/users/${testUser.id}/emporia-auth`)
+        .post(`/emporia-auth`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           emporiaUsername: process.env.EMPORIA_USERNAME,
@@ -82,7 +69,7 @@ describe('EmporiaController Tests', () => {
       expect(response.body).toEqual({ error: 'Missing required credentials' });
 
       const response2 = await request(app)
-        .post(`/users/${testUser.id}/emporia-auth`)
+        .post(`/emporia-auth`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           emporiaPassword: process.env.EMPORIA_PASSWORD,
@@ -94,7 +81,7 @@ describe('EmporiaController Tests', () => {
 
     it('should return 400 if credentials are invalid', async () => {
       const response = await request(app)
-        .post(`/users/${testUser.id}/emporia-auth`)
+        .post(`/emporia-auth`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           emporiaUsername: 'invalid',

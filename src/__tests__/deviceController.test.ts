@@ -34,23 +34,13 @@ describe('DevicesController Tests', () => {
 
   describe('getUserDevices', () => {
     it('should return the list of devices for a valid user', async () => {
-      const response = await request(app)
-        .get(`/users/${authenticatedUser.id}/devices`)
-        .set('Authorization', `Bearer ${token}`);
+      const response = await request(app).get(`/devices`).set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('customerGid');
       expect(response.body).toHaveProperty('devices');
       expect(response.body.devices.length).toBeGreaterThan(0);
-    });
-
-    it('should return 404 if user is not found', async () => {
-      const response = await request(app)
-        .get('/users/nonexistent-id/devices')
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(response.status).toBe(404);
-      expect(response.body).toEqual({ error: 'User not found' });
+      expect(response.body.devices[0]).toHaveProperty('deviceGid');
     });
   });
 });

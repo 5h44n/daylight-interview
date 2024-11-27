@@ -4,9 +4,9 @@ import { Sequelize, DataTypes, Model } from 'sequelize';
 import bcrypt from 'bcrypt';
 
 class User extends Model {
-  public id!: string; // Changed to string to accommodate UUID
+  public id!: string;
   public email!: string;
-  public password!: string; // Added password field
+  public password!: string;
   public emporiaUsername?: string;
   public emporiaIdToken?: string;
   public emporiaIdTokenExpiresAt?: Date;
@@ -16,7 +16,6 @@ class User extends Model {
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
-  // Instance method to compare passwords
   public async comparePassword(password: string): Promise<boolean> {
     return bcrypt.compare(password, this.password);
   }
