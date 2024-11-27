@@ -16,7 +16,6 @@ export async function initializeDatabase() {
   try {
     initializeModels(sequelize);
     await sequelize.sync();
-    console.log('Database initialized successfully');
   } catch (error) {
     console.error('Database initialization failed:', error);
     throw error;
