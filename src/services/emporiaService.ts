@@ -10,6 +10,7 @@ import {
   EmporiaTokens,
   EmporiaCustomer,
   EmporiaCustomerDevices,
+  DeviceListUsageResponse,
 } from '../interfaces/emporiaInterfaces';
 
 const CLIENT_ID = '4qte47jbstod8apnfic0bunmrq';
@@ -41,6 +42,38 @@ export class EmporiaService {
     const customer = await response.json();
 
     return customer as EmporiaCustomer;
+  }
+
+  async getDeviceListUsages(
+    user: User,
+    deviceGids: number[],
+    instant: string,
+    scale: string,
+    energyUnit: string
+  ): Promise<DeviceListUsageResponse> {
+    if (!user.emporiaIdToken) {
+      throw new Error('User does not have valid Emporia credentials');
+    }
+
+    await this.refreshTokensIfNeeded(user);
+
+    const deviceGidsParam = deviceGids.join('+');
+    const url = `${this.BASE_URL}/AppAPI?apiMethod=getDeviceListUsages&deviceGids=${deviceGidsParam}&instant=${encodeURIComponent(
+      instant
+    )}&scale=${scale}&energyUnit=${encodeURIComponent(energyUnit)}`;
+
+    const response = await fetch(url, {
+      headers: {
+        authtoken: user.emporiaIdToken,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch device list usages: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data as DeviceListUsageResponse;
   }
 
   async getCustomerDevices(user: User): Promise<EmporiaCustomerDevices> {

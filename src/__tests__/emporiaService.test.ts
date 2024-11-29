@@ -89,6 +89,66 @@ describe('EmporiaService Tests', () => {
     });
   });
 
+  describe('EmporiaService#getDeviceListUsages', () => {
+    let deviceGid: number;
+
+    beforeEach(async () => {
+      // Get deviceGid for testing
+      const devicesData = await emporiaService.getCustomerDevices(authenticatedUser);
+      deviceGid = devicesData.devices[0].deviceGid;
+    });
+
+    it('should retrieve device list usages successfully', async () => {
+      const instant = new Date().toISOString();
+      const scale = '1H';
+      const energyUnit = 'KilowattHours';
+
+      const result = await emporiaService.getDeviceListUsages(
+        authenticatedUser,
+        [deviceGid],
+        instant,
+        scale,
+        energyUnit
+      );
+
+      expect(result.deviceListUsages).toBeDefined();
+      expect(result.deviceListUsages.devices.length).toBeGreaterThan(0);
+      expect(result.deviceListUsages.devices[0].deviceGid).toBe(deviceGid);
+    });
+
+    it('should throw an error if user lacks valid Emporia credentials', async () => {
+      const instant = new Date().toISOString();
+      const scale = '1H';
+      const energyUnit = 'KilowattHours';
+
+      await expect(
+        emporiaService.getDeviceListUsages(
+          unauthenticatedUser,
+          [deviceGid],
+          instant,
+          scale,
+          energyUnit
+        )
+      ).rejects.toThrow('User does not have valid Emporia credentials');
+    });
+
+    it('should throw an error if the API call fails due to invalid token', async () => {
+      const instant = new Date().toISOString();
+      const scale = '1H';
+      const energyUnit = 'KilowattHours';
+
+      await expect(
+        emporiaService.getDeviceListUsages(
+          invalidAuthenticatedUser,
+          [deviceGid],
+          instant,
+          scale,
+          energyUnit
+        )
+      ).rejects.toThrow('Failed to fetch device list usages');
+    });
+  });
+
   describe('EmporiaService#getChartUsage', () => {
     let deviceGid: number;
 

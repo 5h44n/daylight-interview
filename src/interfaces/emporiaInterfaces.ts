@@ -4,6 +4,27 @@ export interface EmporiaTokens {
   idTokenExpiresAt?: Date;
 }
 
+export interface DeviceUsage {
+  name: string;
+  usage: number;
+  deviceGid: number;
+  channelNum: string;
+  percentage: number;
+  nestedDevices: DeviceUsage[];
+}
+
+export interface DeviceListUsageResponse {
+  deviceListUsages: {
+    instant: string;
+    scale: string;
+    devices: {
+      deviceGid: number;
+      channelUsages: DeviceUsage[];
+    }[];
+    energyUnit: string;
+  };
+}
+
 export interface EmporiaCustomer {
   customerGid: number;
   email: string;
