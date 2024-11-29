@@ -28,6 +28,10 @@ describe('DevicesController Tests', () => {
     );
   });
 
+  afterAll(async () => {
+    await sequelize.close();
+  });
+
   describe('getChartUsage', () => {
     let deviceGid: number;
 
@@ -82,8 +86,80 @@ describe('DevicesController Tests', () => {
     });
   });
 
-  afterAll(async () => {
-    await sequelize.close();
+  describe('getInstantUsage', () => {
+    let deviceGid: number;
+
+    beforeAll(async () => {
+      // Fetch a deviceGid for testing
+      const devicesResponse = await request(app)
+        .get('/devices')
+        .set('Authorization', `Bearer ${token}`);
+      deviceGid = devicesResponse.body.devices[0].deviceGid;
+    });
+
+    it('should return instant usage data for specified devices', async () => {
+      const instant = new Date().toISOString();
+      const scale = '1MIN';
+      const energyUnit = 'KilowattHours';
+
+      const response = await request(app)
+        .get(`/devices/instant`)
+        .query({
+          devices: [deviceGid],
+          instant,
+          scale,
+          energyUnit,
+        })
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.deviceListUsages).toBeDefined();
+      expect(response.body.deviceListUsages.devices.length).toBeGreaterThan(0);
+      expect(response.body.deviceListUsages.devices[0].deviceGid).toBe(deviceGid);
+    });
+
+    it('should return instant usage data for all user devices when no devices are specified', async () => {
+      const instant = new Date().toISOString();
+      const scale = '1MIN';
+      const energyUnit = 'KilowattHours';
+
+      const response = await request(app)
+        .get(`/devices/instant`)
+        .query({
+          instant,
+          scale,
+          energyUnit,
+        })
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.deviceListUsages).toBeDefined();
+      expect(response.body.deviceListUsages.devices.length).toBeGreaterThan(0);
+    });
+
+    it('should return 400 if required query parameters are missing', async () => {
+      const response = await request(app)
+        .get(`/devices/instant`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'Missing required query parameters.');
+    });
+
+    it('should return 401 if authorization token is missing', async () => {
+      const instant = new Date().toISOString();
+      const scale = '1MIN';
+      const energyUnit = 'KilowattHours';
+
+      const response = await request(app).get(`/devices/instant`).query({
+        instant,
+        scale,
+        energyUnit,
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.body).toHaveProperty('error', 'Authorization header missing.');
+    });
   });
 
   describe('getUserDevices', () => {

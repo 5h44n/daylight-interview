@@ -9,7 +9,55 @@ export class DevicesController {
     this.emporiaService = new EmporiaService();
   }
 
-  async getUserDevices(req: Request, res: Response) {
+  async getInstantUsage(req: Request, res: Response) {
+    try {
+      const { devices, instant, scale, energyUnit } = req.query;
+
+      // Validate required query parameters
+      if (!instant || !scale || !energyUnit) {
+        return res.status(400).json({ error: 'Missing required query parameters.' });
+      }
+
+      const instantStr = instant as string;
+      const scaleStr = scale as string;
+      const energyUnitStr = energyUnit as string;
+
+      // Retrieve the authenticated user
+      const userId = req.userId;
+      const user = await User.findByPk(userId);
+
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      let deviceGids: number[];
+
+      if (devices) {
+        // Parse 'devices' into an array of numbers
+        deviceGids = Array.isArray(devices) ? devices.map(Number) : [Number(devices)];
+      } else {
+        // Fetch all devices associated with the user
+        const devicesData = await this.emporiaService.getCustomerDevices(user);
+        deviceGids = devicesData.devices.map((device) => device.deviceGid);
+      }
+
+      // Fetch device instant usage from EmporiaService
+      const deviceListUsage = await this.emporiaService.getDeviceListUsages(
+        user,
+        deviceGids,
+        instantStr,
+        scaleStr,
+        energyUnitStr
+      );
+
+      res.status(200).json(deviceListUsage);
+    } catch (error) {
+      console.error('Error fetching device instant usage:', error);
+      res.status(400).json({ error: 'Failed to fetch device instant usage' });
+    }
+  }
+
+  async getDevices(req: Request, res: Response) {
     try {
       const id = req.userId;
       const user = await User.findByPk(id);

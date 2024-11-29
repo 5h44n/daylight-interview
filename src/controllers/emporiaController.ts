@@ -9,7 +9,7 @@ export class EmporiaController {
     this.emporiaService = new EmporiaService();
   }
 
-  async authenticateUser(req: Request, res: Response) {
+  async authenticate(req: Request, res: Response) {
     try {
       const id = req.userId;
       const { emporiaUsername, emporiaPassword } = req.body;
