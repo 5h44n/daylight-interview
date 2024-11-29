@@ -24,4 +24,5 @@ export function setupRoutes(app: Application) {
 
   // Device routes (Protected)
   app.get('/devices', devicesController.getUserDevices.bind(devicesController));
+  app.get('/devices/:id/history', devicesController.getChartUsage.bind(devicesController));
 }
