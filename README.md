@@ -4,7 +4,7 @@ REST and WebSockets API providing real-time data for Emporia Energy devices
 
 ## Tooling
 
-Typescript + ExpressJS + SQLite
+Typescript + ExpressJS + SQLite (if this POC had more complex models, would've opted for PostgreSQL with database migrations and dockerzied the app with a `docker-compose.yml`. Skipped for the sake of the POC)
 
 CI: Pre-commit hooks via Husky for Prettier (formatting) and ESLint (linting)
 
@@ -41,19 +41,20 @@ Since the device and usage data is queried from the Emporia Energy API via the `
 - `emporiaIdToken`
 - `emporiaIdTokenExpiresAt`
 - `emporiaRefreshToken`
+- `createdAt`
+- `updatedAt`
 
 ## Auth
 
 This API assumes a single client app with multiple users. Authentication and authorization is scoped to the `User` level using a token in the request header. There is an additional endpoint for autheticating with Emporia API (making it a separate step so a User could do other things in the client app before integrating their Emporia account). Emporia tokens for each user are stored in the database. The auth flow is:
 
 - User signs up at `/signup`
-- User logs in at `/login` and receives an auth token. Future requests from the client will store the token in the `Authorization` header as `Bearer <token>`
+- User logs in at `/login` and receives a JWT token.
 - User passes in their Emporia credentials at `/emporia-auth`. The API gets the id (i.e. access) token and refresh token from Emporia and stores it in the database to authenticate future requests to Emporia.
 
 If we were to extend this API to support multiple clients, I would add a `Tenant` model with an `apiKey` and `apiSecret`, and move authentication as well as authorization up to the `Tenant` scope.
 
-**Note about WebSockets**
-After establishing the WebSocket connection, the client should send an authentication message:
+_Note about WebSockets_: After establishing the WebSocket connection, the client should send an authentication message:
 
 ```
 ws.send(JSON.stringify({ type: 'authenticate', token: '<JWT_TOKEN>' }));
