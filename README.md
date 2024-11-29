@@ -4,9 +4,11 @@ REST and WebSockets API providing real-time data for Emporia Energy devices
 
 ## Tooling
 
-Typescript + ExpressJS + SQLite (if this POC had more complex models, would've opted for PostgreSQL with database migrations and dockerzied the app with a `docker-compose.yml`. Skipped for the sake of the POC)
+**Stack**: Typescript + ExpressJS + SQLite
+**CI**: Pre-commit hooks via Husky for Prettier (formatting) and ESLint (linting)
 
-CI: Pre-commit hooks via Husky for Prettier (formatting) and ESLint (linting)
+_note_: If this POC had more complex models, would've opted for PostgreSQL with database migrations and dockerzied the app with a `docker-compose.yml`
+
 
 ## Development
 
