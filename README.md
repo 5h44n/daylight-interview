@@ -91,6 +91,85 @@ These endpoints are accessible without authentication.
   - `400 Bad Request`: Email or password is missing.
   - `401 Unauthorized`: Invalid email or password.
 
+### Protected Endpoints
+
+These endpoints require authentication via a JWT token passed in the `Authorization` header:
+
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+#### **GET** `/me`
+
+- **Description:** Retrieve the authenticated user's information.
+- **Responses:**
+  - `200 OK`: Returns the user object (without the password).
+  - `401 Unauthorized`: Missing or invalid JWT token.
+  - `404 Not Found`: User not found.
+
+#### **POST** `/emporia-auth`
+
+- **Description:** Authenticate the user with the Emporia Energy API and store tokens for accessing Emporia services.
+- **Request Body:**
+  - `emporiaUsername` (_string_, required): Emporia account username.
+  - `emporiaPassword` (_string_, required): Emporia account password.
+- **Responses:**
+  - `200 OK`: Emporia authentication successful.
+  - `400 Bad Request`: Missing credentials or authentication failed.
+  - `404 Not Found`: User not found.
+
+#### **GET** `/devices`
+
+- **Description:** Retrieve the list of Emporia devices associated with the authenticated user.
+- **Responses:**
+  - `200 OK`: Returns the user's devices.
+  - `401 Unauthorized`: Missing or invalid JWT token.
+  - `404 Not Found`: User not found.
+  - `400 Bad Request`: Failed to fetch devices.
+
+#### **GET** `/devices/:id/history`
+
+- **Description:** Get historical usage data for a specific device.
+- **URL Parameters:**
+  - `id` (_number_, required): The `deviceGid` of the device.
+- **Query Parameters:**
+  - `channels` (_array of numbers_, required): Channel numbers to query.
+  - `start` (_ISO 8601 string_, required): Start date and time.
+  - `end` (_ISO 8601 string_, required): End date and time.
+  - `scale` (_string_, required): Time scale (e.g., `1H` for one hour).
+  - `energyUnit` (_string_, required): Unit of energy (e.g., `KilowattHours`).
+- **Responses:**
+  - `200 OK`: Returns usage data and timestamps.
+  - `400 Bad Request`: Missing or invalid query parameters.
+  - `401 Unauthorized`: Missing or invalid JWT token.
+  - `404 Not Found`: User not found.
+
+#### **GET** `/devices/instant`
+
+- **Description:** Get instant (real-time) usage data for devices.
+- **Query Parameters:**
+  - `devices` (_array of numbers_, optional): List of `deviceGid`s. If omitted, data for all user devices is returned.
+  - `instant` (_ISO 8601 string_, required): The specific instant (timestamp) for which to retrieve data.
+  - `scale` (_string_, required): Time scale (e.g., `1MIN` for one minute).
+  - `energyUnit` (_string_, required): Unit of energy (e.g., `KilowattHours`).
+- **Responses:**
+  - `200 OK`: Returns instant usage data for the specified devices.
+  - `400 Bad Request`: Missing or invalid query parameters.
+  - `401 Unauthorized`: Missing or invalid JWT token.
+  - `404 Not Found`: User not found.
+
+---
+
+**Error Response Format:**
+
+For all endpoints, errors are returned in the following JSON format:
+
+```json
+{
+  "error": "Description of the error."
+}
+```
+
 ---
 
 ## WebSockets API
