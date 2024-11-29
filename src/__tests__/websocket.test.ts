@@ -2,58 +2,110 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { setupWebSocket } from '../websocket';
 import { AddressInfo } from 'net';
 import { createServer } from 'http';
+import { generateToken } from './utils/generateToken';
+import { EmporiaService } from '../services/emporiaService';
+import { User } from '../models/user';
+import { initializeDatabase, sequelize } from '../database';
 
 describe('WebSocket Server', () => {
   let wss: WebSocketServer;
   let server: ReturnType<typeof createServer>;
   let wsClient: WebSocket;
-  const PORT = 0;
+  let testUser: User;
+  let token: string;
+  let emporiaService: EmporiaService;
+  const PORT = 0; // server will assign port
 
-  beforeEach((done) => {
+  beforeEach(async () => {
+    // Initialize database and create test user
+    await initializeDatabase();
+    await sequelize.sync({ force: true });
+
+    testUser = await User.create({ email: 'testuser@example.com', password: 'password' });
+    token = generateToken(testUser);
+
+    // Authenticate user with Emporia service
+    emporiaService = new EmporiaService();
+    await emporiaService.authenticate(
+      process.env.EMPORIA_USERNAME as string,
+      process.env.EMPORIA_PASSWORD as string,
+      testUser
+    );
+
     server = createServer();
     wss = new WebSocketServer({ server });
     setupWebSocket(wss);
-    server.listen(PORT, () => {
-      const port = (server.address() as AddressInfo).port;
-      wsClient = new WebSocket(`ws://localhost:${port}`);
-      wsClient.on('open', () => {
-        done();
+
+    await new Promise<void>((resolve) => {
+      server.listen(PORT, () => {
+        const port = (server.address() as AddressInfo).port;
+        wsClient = new WebSocket(`ws://localhost:${port}`);
+        wsClient.on('open', () => {
+          resolve();
+        });
       });
     });
   });
 
-  afterEach((done) => {
+  afterEach(async () => {
     wsClient.close();
-    server.close(() => {
-      done();
+    await new Promise<void>((resolve) => {
+      server.close(async () => {
+        await sequelize.drop();
+        resolve();
+      });
     });
   });
 
-  it('should echo back the message', (done) => {
-    const testMessage = { type: 'test', content: 'Hello' };
+  it('should authenticate and start receiving device data', (done) => {
+    let authenticated = false;
 
     wsClient.on('message', (message: Buffer) => {
       const response = JSON.parse(message.toString());
-      expect(response).toEqual({
-        type: 'echo',
-        data: testMessage,
+
+      if (response.type === 'authenticated') {
+        expect(response.message).toBe('Authentication successful.');
+        authenticated = true;
+      } else if (response.type === 'deviceData') {
+        if (!authenticated) {
+          done.fail('Received device data before authentication.');
+        }
+        expect(response.data.deviceListUsages).toBeDefined();
+        expect(response.data.deviceListUsages.devices).toBeDefined();
+        done();
+      } else if (response.type === 'error') {
+        done.fail(`Unexpected error: ${response.message}`);
+      }
+    });
+
+    // Send authentication message
+    wsClient.send(JSON.stringify({ type: 'authenticate', token }));
+  });
+
+  it('should send error and close connection on invalid token', (done) => {
+    wsClient.on('message', (message: Buffer) => {
+      const response = JSON.parse(message.toString());
+      expect(response.type).toBe('error');
+      expect(response.message).toBe('Invalid or expired token.');
+
+      wsClient.on('close', () => {
+        done();
       });
+    });
+
+    // Send invalid authentication message
+    wsClient.send(JSON.stringify({ type: 'authenticate', token: 'invalidtoken' }));
+  });
+
+  it('should reject messages when not authenticated', (done) => {
+    wsClient.on('message', (message: Buffer) => {
+      const response = JSON.parse(message.toString());
+      expect(response.type).toBe('error');
+      expect(response.message).toBe('Please authenticate first.');
       done();
     });
 
-    wsClient.send(JSON.stringify(testMessage));
-  });
-
-  it('should handle invalid JSON messages', (done) => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
-    wsClient.send('invalid json');
-
-    // Give some time for the error to be logged
-    setTimeout(() => {
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
-      done();
-    }, 100);
+    // Send a message without authenticating
+    wsClient.send(JSON.stringify({ type: 'unknown', data: {} }));
   });
 });
