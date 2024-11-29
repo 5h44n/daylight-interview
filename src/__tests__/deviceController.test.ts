@@ -114,7 +114,7 @@ describe('DevicesController Tests', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.deviceListUsages).toBeDefined();
-      expect(response.body.deviceListUsages.devices.length).toBeGreaterThan(0);
+      expect(response.body.deviceListUsages.devices.length).toBe(1);
       expect(response.body.deviceListUsages.devices[0].deviceGid).toBe(deviceGid);
     });
 

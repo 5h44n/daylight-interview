@@ -36,7 +36,7 @@ describe('EmporiaService Tests', () => {
       emporiaUsername: 'invalidUser',
       emporiaIdToken: 'invalidIdToken',
       emporiaRefreshToken: 'invalidRefreshToken',
-      emporiaIdTokenExpiresAt: new Date(Date.now() + 1000 * 60 * 60), // Still valid but invalid token
+      emporiaIdTokenExpiresAt: new Date(Date.now() + 1000 * 60 * 60),
     });
 
     unauthenticatedUser = await User.create({
